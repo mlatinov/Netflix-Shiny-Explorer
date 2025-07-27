@@ -41,6 +41,38 @@ clean_data <- function(data){
   return(data)
 }
 
+# Netflix Ploly Theme 
+netflix_plotly_theme <- function(p) {
+  layout(
+    p,
+    plot_bgcolor = "#FFFFFF",  # White background for the plot
+    paper_bgcolor = "#FFFFFF", # White background for the full chart area
+    font = list(
+      color = "#E50914",       # Netflix red for all text
+      family = "Bebas Neue",   # Same Netflix font
+      size = 14
+    ),
+    xaxis = list(
+      title = "",
+      color = "#E50914",
+      gridcolor = "#DDDDDD",   # Light grey grid lines
+      zerolinecolor = "#DDDDDD",
+      tickfont = list(color = "#222222")
+    ),
+    yaxis = list(
+      title = "",
+      color = "#E50914",
+      gridcolor = "#DDDDDD",
+      zerolinecolor = "#DDDDDD",
+      tickfont = list(color = "#222222")
+    ),
+    legend = list(
+      bgcolor = "#FFFFFF",
+      bordercolor = "#E50914",
+      font = list(color = "#222222")
+    )
+  )
+}
 ##### Visualization Functions ####
 
 # #### Heatmap ####
