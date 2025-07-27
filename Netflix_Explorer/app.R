@@ -9,7 +9,6 @@ library(tidyverse)
 setwd("C:/Users/Huawei/OneDrive/Competitions/Netflix-Shiny-Explorer/")
 source("functions/ts_functions.R")
 source("functions/helper_functions.R")
-
 stock_data <- tar_read(netflix_stock_price)
 
 # UI 
@@ -147,7 +146,27 @@ ui <- dashboardPage(
       #### Forecast Tab ####
       tabItem(tabName = "forecast_ts",
               h2("Forecast Models"),
-              p("Getting There ")
+              p("Getting There "),
+              
+              ## User Selects the Future Forecast ##
+              fluidRow(
+                box(
+                  title = "Pick Forecast Range",
+                  selectInput(
+                    inputId = "forecast_future",
+                    label = "Forecast",
+                    choices = list(
+                      "1 Month Forecast" ="1 month",
+                      "3 Months Forecast" = "3 months",
+                      "6 Months Forecast" ="6 months",
+                      "1 Year Forecast" = "1 year",
+                      "3 years" = "3 Years Forecast"
+                      ),
+                    # Default = 1 month
+                    selected = "1 month"
+                    )
+                  )
+              )
       )
     )
   )
@@ -157,6 +176,8 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   
   #### Time Series Section ####
+  
+  ## TS EDA Section ##
   
   # Plot datatable with TS summary Statistics
   output$ts_eda_summary_stat <- renderDataTable({
@@ -168,24 +189,44 @@ server <- function(input, output, session) {
   })
   # Plot STL Diagnostics for the TS Explanatory tab
   output$stl_stock_viz <- renderPlotly({
-    plot_stl_diagnostics(
-      .data        = stock_data,
-      .date_var    = date,
-      .value       = close,
-      .feature_set = c("trend", "remainder"),
-      .frequency   = "auto",
-      .trend       = "auto",
-      .interactive = TRUE  
+   diag_p <- plot_stl_diagnostics(
+     .data        = stock_data,
+     .date_var    = date,
+     .value       = close,
+     .feature_set = c("trend", "remainder"),
+     .frequency   = "auto",
+     .trend       = "auto",
+     .interactive = TRUE  
     )
+   netflix_plotly_theme(diag_p)
   })
   ## Plot Autocorrelation and Partial Autocorrelation
   output$autocor_ts <- renderPlotly({
-    plot_acf_diagnostics(stock_data, .date_var = date, .value = close, .lags = 30)
+    autocor_p <- plot_acf_diagnostics(stock_data, .date_var = date, .value = close, .lags = 30)
+    netflix_plotly_theme(autocor_p)
   })
   ## Plot Anomaly Detection
   output$annomaly_detect_plot <- renderPlotly({
-    plot_anomaly_diagnostics(.data = stock_data,.date_var = date,.value = close)
+    anomaly_p <- plot_anomaly_diagnostics(.data = stock_data,.date_var = date,.value = close)
+    netflix_plotly_theme(anomaly_p)
   })
+  
+  ## TS Forecast Section ##
+  
+  # User selects the future period for forecasting
+  stock_data_future <- reactive({
+    # Check if the stock_data and the User input are available
+    req(stock_data,input$forecast_future)
+    # Extent the stock data
+    future_frame(
+      .data = stock_data,
+      .date_var = date,
+      .length_out = input$forecast_future # <-- User input 
+      )
+  })
+  ## Forecast the future data ##
+  
 }
 
+# Run the app
 shinyApp(ui = ui, server = server)
