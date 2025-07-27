@@ -6,6 +6,7 @@ library(DT)
 library(bslib)
 library(tidyverse)
 
+## Source Functions and Data
 setwd("C:/Users/Huawei/OneDrive/Competitions/Netflix-Shiny-Explorer/")
 source("functions/ts_functions.R")
 source("functions/helper_functions.R")
@@ -147,7 +148,14 @@ ui <- dashboardPage(
       tabItem(tabName = "forecast_ts",
               h2("Forecast Models"),
               p("Getting There "),
-              
+              ## Model ACC Table ##
+              fluidRow(
+                box(
+                  title = "Model Accuracy Table",
+                  dataTableOutput(outputId = "ts_model_acc_table"),
+                  width = 12 
+                )
+              ),
               ## User Selects the Future Forecast ##
               fluidRow(
                 box(
@@ -164,11 +172,21 @@ ui <- dashboardPage(
                       ),
                     # Default = 1 month
                     selected = "1 month"
-                    )
+                    ),
+                  # User selects the Models or Ensemble for forecasting
+                  selectInput(
+                    inputId = "ts_models_ensemble",
+                    label = "Method",
+                    choices = list(
+                      "Individual Models" = "models",
+                      "Ensemble" = "ensemble"
+                      )
+                    ),
+                  width = 3
                   )
+                )
               )
       )
-    )
   )
 )
 
@@ -213,10 +231,12 @@ server <- function(input, output, session) {
   
   ## TS Forecast Section ##
   
+  ## Modeltime Accuracy Table ## ts_model_acc_table
+  
   # User selects the future period for forecasting
   stock_data_future <- reactive({
     # Check if the stock_data and the User input are available
-    req(stock_data,input$forecast_future)
+    req(stock_data,input$forecast_future,input$ts_models_ensemble)
     # Extent the stock data
     future_frame(
       .data = stock_data,
@@ -224,6 +244,8 @@ server <- function(input, output, session) {
       .length_out = input$forecast_future # <-- User input 
       )
   })
+  # User selects the Models or Ensemble for forecasting
+  
   ## Forecast the future data ##
   
 }
