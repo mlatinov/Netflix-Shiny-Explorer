@@ -10,8 +10,12 @@ library(tidyverse)
 
 ## ML ##
 library(tidymodels)
+library(finetune)
 library(modeltime)
 library(modeltime.resample)
+
+## Viz ##
+library(plotly)
 
 #### Source Functions ####
 source("functions/helper_functions.R")
@@ -63,7 +67,7 @@ list(
   ## Recipe ##
   tar_target(
     name = ts_recipe,
-    command = prepare_ts(data = ts_split),
+    command = prepare_ts(data = ts_split)
     ),
   
   ### TS Models ###
@@ -73,7 +77,6 @@ list(
     name = arima_boost_model,
     command = arima_model_function(ts_split = ts_split ,ts_recipe = ts_recipe)
   ),
-  
   ## PROPHET model ##
   tar_target(
     name = prophet_model,
