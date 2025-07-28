@@ -63,7 +63,12 @@ list(
   ## Extend data 1 Year into the future ##
   tar_target(
     name = ts_extent,
-    command = future_frame(.data = netflix_stock_price,.date_var = date,.length_out = "1 year")
+    command = future_frame(
+      .data = netflix_stock_price,
+      .date_var = date,
+      .length_out = "1 year",
+      .bind_data = TRUE
+      )
   ),
   ## Recipe ##
   tar_target(
@@ -81,7 +86,7 @@ list(
   ## PROPHET model ##
   tar_target(
     name = prophet_boost_model,
-    command = prophet_model_function
+    command = prophet_model_function(ts_split = ts_split,ts_recipe = ts_recipe)
   ),
   ## Deep Ar ##
   ## GP Forecaster ##
@@ -173,8 +178,7 @@ tar_target(
     actual_data = netflix_stock_price,
     conf_interval = 0.95
     )
-  ),
+  )
 )
-
 
 
