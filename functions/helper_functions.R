@@ -14,9 +14,10 @@ ts_clean <- function(file){
     rename_with(.fn = tolower) %>%
     # Change the date type to date
     mutate(
-      date = ymd(date)
+      date = ymd(date),
+      # Log Returns
+      log_return = log(close / lag(close))
     )
-  
   # Retrun 
   return(data_clean)
 }

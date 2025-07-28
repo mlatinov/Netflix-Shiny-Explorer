@@ -5,17 +5,17 @@
 prepare_ts <- function(data){
   
   ## Create a recipe for preprocesing ##
-  recipe <- recipe(close ~ .,data = training(data)) %>%
+  recipe <- recipe(log_return ~ .,data = training(data)) %>%
     
     # Convert date to time-based features
     step_timeseries_signature(date) %>%
     
     # Add lag Features 
-    step_lag(close, lag = 1:12) %>%
+    step_lag(log_return, lag = 1:12) %>%
     
     # Add MA
     step_slidify(
-      close,
+      log_return,
       .f = ~mean(.x, na.rm = TRUE),
       period = 20,
       align = "right",
@@ -94,8 +94,11 @@ arima_model_function <- function(ts_split,ts_recipe){
   # Finalize the workflow
   final_wf <- finalize_workflow(arima_wf, best_params)
   
+  # Fit workflow
+  arima_fit <- fit(final_wf,training(ts_split))
+  
   # Return the workflow 
-  return(final_wf)
+  return(arima_fit)
 }
 
 ## Prophet Model ## 
@@ -172,7 +175,9 @@ prophet_model_function <- function(ts_split,ts_recipe){
   best_tune <- select_best(tune_mbo)
   # Finalize the workflow 
   prophet_final_wf <- finalize_workflow(prophet_workflow,parameters = best_tune)
+  # Fit workflow
+  prophet_final_fit <- fit(prophet_final_wf,training(ts_split))
   # Return final workflow 
-  return(prophet_final_wf)
+  return(prophet_final_fit)
 }
 
