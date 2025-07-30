@@ -10,6 +10,9 @@ prepare_ts <- function(data){
     # Convert date to time-based features
     step_timeseries_signature(date) %>%
     
+    # Remove Features 
+    step_rm(date_hour, date_minute, date_second, date_hour12, date_am.pm) %>%
+  
     # Add lag Features 
     step_lag(log_return, lag = 1:12) %>%
     
@@ -20,7 +23,17 @@ prepare_ts <- function(data){
       period = 20,
       align = "right",
       partial = TRUE
-    )
+    ) %>%
+    
+    # Remove nzv
+    step_nzv(all_predictors()) %>%
+    step_zv(all_predictors()) %>%
+    
+    # Normalize the numeric values 
+    step_normalize(all_numeric(),na_rm = TRUE) %>%
+    
+    # Exclude every NAs
+    step_naomit(all_predictors())
   
   # Return the recipe 
   return(recipe)
@@ -180,4 +193,17 @@ prophet_model_function <- function(ts_split,ts_recipe){
   # Return final workflow 
   return(prophet_final_fit)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
