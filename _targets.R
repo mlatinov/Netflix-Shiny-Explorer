@@ -6,6 +6,7 @@ library(targets)
 
 ## Date wrangling ##
 library(timetk)
+library(readxl)
 library(tidyverse)
 
 ## ML ##
@@ -17,15 +18,19 @@ library(modeltime.ensemble)
 
 ## Viz ##
 library(plotly)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggridges)
 
 #### Source Functions ####
 source("functions/helper_functions.R")
 source("functions/ts_functions.R")
-
+source("functions/churn_functions.R")
 #### Pipeline ####
 list(
   
-  #### Load the datasets ####
+  #### Load the Datasets ####
   
   ## Netflix Films ##
   tar_target(
@@ -36,11 +41,6 @@ list(
   tar_target(
     name = netflix_prices,
     command = read.csv("data/netflix price in different countries.csv")
-    ),
-  ## Netflix Stock Prices ##
-  tar_target(
-    name = netflix_stock_price,
-    command = ts_clean(file = "data/NFLX.csv")
     ),
   ## Netflix IMB Movies scores ##
   tar_target(
@@ -54,6 +54,13 @@ list(
   ),
   
   #### Time Series ####
+  
+  # Load the data 
+  ## Netflix Stock Prices ##
+  tar_target(
+    name = netflix_stock_price,
+    command = ts_clean(file = "data/NFLX.csv")
+  ),
   
   ### Make training and Testing set ### 
   tar_target(
@@ -88,9 +95,6 @@ list(
     name = prophet_boost_model,
     command = prophet_model_function(ts_split = ts_split,ts_recipe = ts_recipe)
   ),
-  ## Deep Ar ##
-  ## GP Forecaster ##
-
   ## Modeltime Table ##
   tar_target(
     name = modeltime_table,
@@ -100,13 +104,23 @@ list(
     )
   ),
   ## Ensemble ##
+  # Mean 
   tar_target(
-    name = ts_ensemble,
+    name = ts_ensemble_mean,
     command =  ensemble_average(
       object = modeltime_table,
       type = "mean"
       )
     ),
+  # Weighted
+  tar_target(
+    name = ts_ensemble_weighted,
+    command = ensemble_weighted(
+      object = modeltime_table,
+      loadings = c(3,1),
+      scale_loadings = TRUE
+      )
+  ),
 ## Calibration ##
 tar_target(
   name = calibration_table,
@@ -116,10 +130,20 @@ tar_target(
     )
   ),
 ## Ensemble Calibration ##
+
+# Mean Ensemble
 tar_target(
   name = calibration_table_ensemble,
   command = modeltime_calibrate(
-    object = ts_ensemble,
+    object = ts_ensemble_mean,
+    new_data = testing(ts_split)
+  )
+),
+# Weighted Ensemble
+tar_target(
+  name = calibration_table_ensemble_w,
+  command = modeltime_calibrate(
+    object = ts_ensemble_weighted,
     new_data = testing(ts_split)
   )
 ),
@@ -152,10 +176,20 @@ tar_target(
       )
     ),
 ## Refit Ensemble ##
+
+# Mean 
 tar_target(
   name = refit_ensemble,
   command = modeltime_refit(
     object = calibration_table_ensemble,
+    data = netflix_stock_price
+  )
+),
+# Weighted
+tar_target(
+  name = refit_ensemble_w,
+  command = modeltime_refit(
+    object = calibration_table_ensemble_w,
     data = netflix_stock_price
   )
 ),
@@ -170,15 +204,56 @@ tar_target(
     )
   ),
 ## Forecast Forward Ensemble ##
+
+# Mean 
 tar_target(
   name = forecast_forward_ensemble,
+  command = modeltime_forecast(
+    object = refit_ensemble_w,
+    new_data = ts_extent,
+    actual_data = netflix_stock_price,
+    conf_interval = 0.95
+    )
+  ),
+# Weighted
+tar_target(
+  name = forecast_forward_ensemble_w,
   command = modeltime_forecast(
     object = refit_ensemble,
     new_data = ts_extent,
     actual_data = netflix_stock_price,
     conf_interval = 0.95
     )
+  ),
+#### Netflix Churn ####
+# Load the data 
+
+## Netlix Churn ##
+tar_target(
+  name = netflix_churn,
+  command = read_excel("data/netflix_large_user_data.xlsx")
+  ),
+## CLean  the Churn Data ##
+tar_target(
+  name = churn_clean,
+  command = clean_churn(netflix_churn)
+  ),
+#### Modeling Churn  ####
+
+## Split the data ##
+tar_target(
+  name = churn_split,
+  command = initial_split(data = churn_clean,prop = 0.8)
+  ),
+## Recipe
+tar_target(
+  name = recipe_churn,
+  command = recipe_churn_make(churn_split)
+  ),
+## Random Forest Model
+tar_target(
+  name = random_forest_model,
+  command = random_forest_churn(churn_split = churn_split,recipe_churn = recipe_churn)
   )
 )
-
 
